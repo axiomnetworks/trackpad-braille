@@ -57,17 +57,18 @@ struct ContentView: View {
                     Text("Strong thud").tag(16)
                 }
                 VStack(alignment: .leading) {
-                    Text("Dot spacing \(Int(model.dotSpacing)) millimetres")
-                    Slider(value: $model.dotSpacing, in: 5...14, step: 1)
+                    Text("Dot spacing \(String(format: "%.1f", model.dotSpacing)) millimetres")
+                    Slider(value: $model.dotSpacing, in: 2...6, step: 0.5)
                         .accessibilityLabel("Dot spacing in millimetres")
                 }
                 VStack(alignment: .leading) {
-                    Text("Dot size \(String(format: "%.1f", model.hitRadius)) millimetres")
-                    Slider(value: $model.hitRadius, in: 2...6, step: 0.5)
+                    Text("Dot touch radius \(String(format: "%.2f", model.hitRadius)) millimetres")
+                    Slider(value: $model.hitRadius, in: 0.5...2.5, step: 0.25)
                         .accessibilityLabel("Dot hit radius in millimetres")
                 }
             }
             Section("Trackpad size") {
+                Stepper("Gap between taps \(model.tapGap) milliseconds", value: $model.tapGap, in: 30...120, step: 10)
                 Stepper("Width \(Int(model.padWidth)) millimetres", value: $model.padWidth, in: 100...200, step: 1)
                 Stepper("Height \(Int(model.padHeight)) millimetres", value: $model.padHeight, in: 60...140, step: 1)
             }
