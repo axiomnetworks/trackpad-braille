@@ -37,6 +37,36 @@ final class Model: ObservableObject {
     private let seq: Sequencer
     private var allCells: [UInt8] = []
     private var hapticsReady = false
+    private var keyMonitor: Any?
+    nonisolated(unsafe) static var arrowsActive = true
+
+    /// Bare arrow keys drive playback unless a text field, slider, stepper or menu has focus.
+    /// Left/Right = previous/next character, Up/Down = previous/next word. Escape leaves the text field.
+    private func installKeys() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let blocked: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+            guard event.modifierFlags.intersection(blocked).isEmpty else { return event }
+            let r = NSApp.keyWindow?.firstResponder
+            let code = event.keyCode
+            if code == 53, r is NSText {
+                NSApp.keyWindow?.makeFirstResponder(nil)
+                return nil
+            }
+            guard Model.arrowsActive, code >= 123, code <= 126 else { return event }
+            if r is NSText || r is NSSlider || r is NSStepper || r is NSPopUpButton { return event }
+            Task { @MainActor in
+                guard let m = self else { return }
+                switch code {
+                case 123: m.stepBack()
+                case 124: m.stepForward()
+                case 125: m.nextWord()
+                default: m.previousWord()
+                }
+            }
+            return nil
+        }
+    }
 
     init() {
         seq = Sequencer(engine: engine)
@@ -63,12 +93,15 @@ final class Model: ObservableObject {
             return
         }
         hapticsReady = true
+        installKeys()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { NSApp.keyWindow?.makeFirstResponder(nil) }
         if let sz = engine.surfaceSize() { padWidth = sz.width; padHeight = sz.height }
-        status = "Ready. Press Play, or Command Return. Each dot is taps: top row one, middle two, bottom three."
+        status = "Ready. Press Play or Command Return. Left and Right arrows step one character, Up and Down step one word. Escape leaves the text field. Each dot is taps: top row one, middle two, bottom three."
         modeChanged()
     }
 
     private func modeChanged() {
+        Model.arrowsActive = (mode == .sequential)
         guard hapticsReady else { return }
         if mode == .spatial {
             stopPlayback()
