@@ -23,6 +23,7 @@ final class Engine {
     private var lastDot = -1
     private var lastFire = Date.distantPast
     private(set) var running = false
+    private var opened = false
 
     // MARK: layout
 
@@ -77,9 +78,18 @@ final class Engine {
     }
 
     /// Returns nil on success or an error message.
+    func openHaptics() -> String? {
+        if opened { return nil }
+        if let err = mt.open() { return err }
+        opened = true
+        return nil
+    }
+
+    func pulse(_ waveform: Int32) { mt.fire(waveform, count: 1, gapMS: 0) }
+
     func start() -> String? {
         if running { return nil }
-        if let err = mt.open() { return err }
+        if let err = openHaptics() { return err }
         mt.startTouches { [weak self] touches, count in self?.handle(touches, count) }
         running = true
         return nil
