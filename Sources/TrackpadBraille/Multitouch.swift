@@ -39,6 +39,7 @@ final class Multitouch {
     private var stop: StopFn?
     private var getID: GetIDFn?
     private var getDims: GetDimsFn?
+    private var registered = false
     private let pendingLock = NSLock()
     private var pendingTaps = 0
 
@@ -103,9 +104,12 @@ final class Multitouch {
         guard let device, let register, let start else { return }
         Multitouch.onFrame = handler
         Multitouch.chosenDevice = device
-        register(device) { dev, touches, count, _, _ in
-            guard dev == Multitouch.chosenDevice else { return }
-            Multitouch.onFrame?(touches, Int(count))
+        if !registered {
+            registered = true
+            register(device) { dev, touches, count, _, _ in
+                guard dev == Multitouch.chosenDevice else { return }
+                Multitouch.onFrame?(touches, Int(count))
+            }
         }
         start(device, 0)
     }
