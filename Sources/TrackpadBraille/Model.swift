@@ -7,9 +7,10 @@ final class Model: ObservableObject {
     @Published var page = 0
     @Published var status = "Starting."
     @Published var hapticsOn = true { didSet { toggleHaptics() } }
-    @Published var dotSpacing = 9.0 { didSet { pushConfig() } }
-    @Published var hitRadius = 3.5 { didSet { pushConfig() } }
+    @Published var dotSpacing = 2.5 { didSet { pushConfig() } }
+    @Published var hitRadius = 1.0 { didSet { pushConfig() } }
     @Published var waveform = 4 { didSet { pushConfig() } }
+    @Published var tapGap = 50 { didSet { pushConfig() } }
     @Published var calibrate = false { didSet { pushConfig() } }
     @Published var padWidth = 155.0 { didSet { pushConfig() } }
     @Published var padHeight = 99.0 { didSet { pushConfig() } }
@@ -34,7 +35,12 @@ final class Model: ObservableObject {
         if let err = engine.start() {
             status = "Haptics unavailable. \(err)"
         } else {
-            status = "Trackpad ready. Rest a finger on the trackpad and slide it. You feel a tap on each raised dot."
+            var sizeNote = "Trackpad size not reported by the system, using \(Int(padWidth)) by \(Int(padHeight)) millimetres. Adjust it below if wrong."
+            if let sz = engine.surfaceSize() {
+                sizeNote = "Trackpad size read from the system: \(String(format: "%.0f", sz.width)) by \(String(format: "%.0f", sz.height)) millimetres."
+                padWidth = sz.width; padHeight = sz.height
+            }
+            status = "Trackpad ready. \(sizeNote) Slide one finger. Top dots give one tap, middle dots two, bottom dots three."
         }
     }
 
@@ -44,6 +50,7 @@ final class Model: ObservableObject {
         c.hitRadiusMM = hitRadius
         c.waveform = Int32(waveform)
         c.calibrate = calibrate
+        c.tapGapMS = tapGap
         c.padWidthMM = padWidth
         c.padHeightMM = padHeight
         engine.setConfig(c)
